@@ -1,76 +1,82 @@
 # WebRTCCore
 
-A modern Swift Package for WebRTC integration with The Composable Architecture (TCA), designed for iOS and macOS applications.
+A simplified Swift Package for receiving WebRTC connections with The Composable Architecture (TCA), designed for iOS and macOS applications.
 
 ## Features
 
-- 🏗️ **TCA Integration**: Full integration with The Composable Architecture pattern
-- 🎥 **WebRTC Support**: Complete peer-to-peer video/audio communication
+- 🎯 **Receive-Only Focus**: Optimized for receiving WebRTC video/audio streams
+- 🤖 **Automated Flow**: Auto-handles connection setup and SDP exchange
+- 🏗️ **TCA Integration**: Clean integration with The Composable Architecture
 - 🔄 **AsyncStream Events**: Modern async/await event handling
 - 🧪 **Swift Testing**: Comprehensive test coverage with Swift Testing framework
 - 🚀 **Swift 6.0**: Full Swift 6 strict concurrency compliance
 - 📱 **Multi-Platform**: iOS 17+ and macOS 14+ support
+- 🔌 **Standard Signaling**: Uses standardized signaling models for interoperability
 
 ## Architecture
 
 ```mermaid
 graph TD
-    A[WebRTCView] -->|ViewAction| B[WebRTCFeature]
-    B -->|Dependency| C[WebRTCDependency]
-    C -->|Live Implementation| D[WebRTCEngine]
-    D -->|WebRTC Operations| E[RTCPeerConnection]
+    A[Client App] -->|ViewAction| B[WebRTCFeature]
+    A -->|Signaling Server| S[WebRTCOffer/Answer/ICE]
     
-    B -->|State Updates| F[WebRTCFeature.State]
-    F -->|Peer Management| G[PeerState Array]
-    F -->|Error Handling| H[WebRTCError]
+    B -->|Public API| C[WebRTCDependency]
+    C -->|Internal| D[WebRTCEngine]
+    D -->|Native WebRTC| E[RTCPeerConnection]
     
-    D -->|AsyncStream| I[WebRTCEvent]
-    I -->|Event Types| J[SDP Events]
-    I -->|Event Types| K[ICE Events]  
-    I -->|Event Types| L[Media Events]
-    I -->|Event Types| M[Connection Events]
+    B -->|Auto State Updates| F[WebRTCFeature.State]
+    F -->|Peer Management| G[IdentifiedArray PeerState]
+    F -->|Connection Tracking| H[ConnectionState]
+    F -->|Error Handling| I[WebRTCError]
     
-    N[WebRTCModels] -->|Data Types| O[VideoTrackInfo]
-    N -->|Data Types| P[WebRTCOffer/Answer]
-    N -->|Data Types| Q[ICECandidate]
+    D -->|AsyncStream| J[WebRTCEvent]
+    J -->|Auto Events| K[Video Track Added]
+    J -->|Auto Events| L[Connection State]
+    J -->|Auto Events| M[Error Events]
     
-    style A fill:#e1f5fe
+    B -->|Delegate| N[Auto-Generated Responses]
+    N -->|answerGenerated| O[Send to Signaling Server]
+    N -->|videoTrackAdded| P[Display Video]
+    
+    style A fill:#e3f2fd
     style B fill:#f3e5f5
     style C fill:#e8f5e8
-    style D fill:#fff3e0
+    style S fill:#fff3e0
+    style D fill:#fafafa
     style E fill:#ffebee
 ```
 
 ## Core Components
 
 ### 🎯 WebRTCFeature
-The main TCA reducer that manages WebRTC state and actions:
-- **State Management**: Tracks connected peers and connection states
-- **ViewAction Pattern**: Clean separation of user actions from internal actions
-- **Delegate Pattern**: Event propagation to parent features
-- **Error Handling**: Custom WebRTC error types with proper handling
+The main TCA reducer with simplified receive-only API:
+- **5 Essential ViewActions**: `task`, `handleRemoteOffer`, `handleICECandidate`, `disconnectPeer`, `dismissError`
+- **Automated Flow**: Receiving offers automatically creates connections and generates answers
+- **Delegate Events**: Auto-generated answers, video tracks, and connection updates
+- **State Management**: Tracks connected peers with automatic state updates
 
-### 🔧 WebRTCEngine
-Actor-based WebRTC engine that handles:
-- Peer connection management
-- SDP offer/answer generation
-- ICE candidate handling
+### 🔧 WebRTCDependency (Public API)
+Clean TCA dependency interface using standardized signaling models:
+- **Signaling Models**: Uses `WebRTCOffer`, `WebRTCAnswer`, `ICECandidate` instead of WebRTC native types
+- **Automatic Conversion**: Internal conversion between signaling models and WebRTC types
+- **Test Support**: Mock implementations for comprehensive testing
+- **Sendable Compliance**: Full Swift 6 concurrency safety
+
+### 🔒 WebRTCEngine (Internal)
+Internal actor-based engine (not exposed to clients):
+- Peer connection lifecycle management
+- SDP negotiation handling
+- ICE candidate processing
 - Media track management
 - Event streaming via AsyncStream
 
-### 📡 WebRTCDependency
-TCA dependency client for:
-- **Test Support**: Mock implementations for testing
-- **Live Implementation**: Real WebRTC operations
-- **Sendable Compliance**: Swift 6 concurrency safe
-- **Modern API**: AsyncStream-based event handling
-
-### 📊 WebRTCModels
-Comprehensive data models including:
+### 📊 Signaling Models
+Standard interoperable data models:
+- `WebRTCOffer`: SDP offer with client metadata
+- `WebRTCAnswer`: SDP answer with client metadata  
+- `ICECandidate`: ICE candidate with structured data
 - `VideoTrackInfo`: Video track information with Sendable compliance
-- `WebRTCEvent`: Unified event system for all WebRTC operations
-- `WebRTCError`: Typed error handling
-- Signaling models for SDP and ICE candidate exchange
+- `WebRTCEvent`: Unified event system for automated WebRTC operations
 
 ## Installation
 
@@ -105,6 +111,7 @@ struct AppFeature: Reducer {
     
     enum Action {
         case webRTC(WebRTCFeature.Action)
+        case signalingMessage(SignalingMessage) // Your signaling system
     }
     
     var body: some ReducerOf<Self> {
@@ -113,13 +120,33 @@ struct AppFeature: Reducer {
         }
         Reduce { state, action in
             switch action {
-            case .webRTC(.delegate(.offerGenerated(let sdp, let userId))):
-                // Handle offer generation
+            // Auto-generated answer from WebRTC - send to signaling server
+            case let .webRTC(.delegate(.answerGenerated(sdp, userId))):
+                let answer = WebRTCAnswer(sdp: sdp, type: "answer", clientId: userId, videoSource: "")
+                return sendToSignalingServer(answer, userId: userId)
+                
+            // ICE candidate generated - send to signaling server  
+            case let .webRTC(.delegate(.iceCandidateGenerated(candidate, sdpMLineIndex, sdpMid, userId))):
+                let iceCandidate = ICECandidate(
+                    type: "ice", clientId: userId,
+                    candidate: ICECandidate.Candidate(
+                        candidate: candidate, sdpMLineIndex: sdpMLineIndex, sdpMid: sdpMid
+                    )
+                )
+                return sendToSignalingServer(iceCandidate, userId: userId)
+                
+            // Video track added - display in UI
+            case let .webRTC(.delegate(.videoTrackAdded(trackInfo))):
+                print("📺 Video track added for user: \(trackInfo.userId)")
                 return .none
                 
-            case .webRTC(.delegate(.videoTrackAdded(let trackInfo))):
-                // Handle video track addition
-                return .none
+            // Handle incoming signaling messages
+            case let .signalingMessage(.offer(offer, userId)):
+                // Automatically handle offer and generate answer
+                return .send(.webRTC(.view(.handleRemoteOffer(offer, userId: userId))))
+                
+            case let .signalingMessage(.iceCandidate(candidate, userId)):
+                return .send(.webRTC(.view(.handleICECandidate(candidate, userId: userId))))
                 
             default:
                 return .none
@@ -129,34 +156,86 @@ struct AppFeature: Reducer {
 }
 ```
 
-### Custom UI Integration
+### SwiftUI Integration
 
-Since WebRTCView is excluded from the package, create your own UI:
+Create your custom UI (WebRTCView is internal):
 
 ```swift
 import SwiftUI
 import ComposableArchitecture
 import WebRTCCore
 
-struct CustomWebRTCView: View {
-    let store: StoreOf<WebRTCFeature>
+struct VideoCallView: View {
+    @Bindable var store: StoreOf<AppFeature>
     
     var body: some View {
         VStack {
-            // Your custom UI here
-            Button("Create Connection") {
-                store.send(.view(.createPeerConnection(userId: "user123")))
+            // Connection status
+            HStack {
+                Circle()
+                    .fill(store.webRTC.isListening ? .green : .gray)
+                    .frame(width: 12, height: 12)
+                Text("\(store.webRTC.connectedPeers.count) connected")
             }
             
-            ForEach(store.connectedPeers) { peer in
-                PeerConnectionView(peer: peer)
+            // Video feeds
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                ForEach(store.webRTC.connectedPeers) { peer in
+                    if let videoTrack = peer.videoTrack {
+                        VideoView(track: videoTrack.track) // Your video renderer
+                            .aspectRatio(16/9, contentMode: .fit)
+                            .overlay(alignment: .bottomLeading) {
+                                Text(peer.id)
+                                    .padding(4)
+                                    .background(.black.opacity(0.7))
+                                    .foregroundColor(.white)
+                                    .font(.caption)
+                            }
+                    }
+                }
+            }
+            
+            // Error display
+            if let error = store.webRTC.error {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                    Text(error.localizedDescription)
+                    Button("Dismiss") {
+                        store.send(.webRTC(.view(.dismissError)))
+                    }
+                }
+                .foregroundColor(.red)
             }
         }
         .task {
-            store.send(.view(.task))
+            // Start WebRTC listening
+            store.send(.webRTC(.view(.task)))
         }
     }
 }
+```
+
+### Complete Flow Example
+
+```swift
+// 1. Start WebRTC
+store.send(.webRTC(.view(.task)))
+
+// 2. When you receive an offer from signaling server
+let offer = WebRTCOffer(sdp: sdpString, type: "offer", clientId: userId, videoSource: "camera")
+store.send(.webRTC(.view(.handleRemoteOffer(offer, userId: userId))))
+
+// 3. WebRTC automatically generates answer - send it back via signaling
+// (handled in your reducer's delegate case)
+
+// 4. When you receive ICE candidates from signaling server
+let candidate = ICECandidate(
+    type: "ice", clientId: userId,
+    candidate: ICECandidate.Candidate(candidate: candidateString, sdpMLineIndex: 0, sdpMid: "0")
+)
+store.send(.webRTC(.view(.handleICECandidate(candidate, userId: userId))))
+
+// 5. Video tracks are automatically added to state and delegate events fired
 ```
 
 ### Testing
@@ -171,19 +250,33 @@ import ComposableArchitecture
 @MainActor
 struct MyWebRTCTests {
     @Test
-    func webRTCConnection() async {
+    func handleRemoteOffer_automaticallyCreatesConnectionAndSendsAnswer() async {
+        let mockOffer = WebRTCOffer(
+            sdp: "mock-offer-sdp",
+            type: "offer", 
+            clientId: "user123",
+            videoSource: "camera"
+        )
+        let mockAnswer = WebRTCAnswer(
+            sdp: "mock-answer-sdp",
+            type: "answer",
+            clientId: "user123", 
+            videoSource: "camera"
+        )
+        
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
-            $0.webRTCEngine.createPeerConnection = { _ in true }
+            $0.webRTCEngine.setRemoteOffer = { _, _ in mockAnswer }
         }
         
-        await store.send(.view(.createPeerConnection(userId: "test")))
-        await store.receive(.createPeerConnectionResult("test", true)) {
+        await store.send(\.view, .handleRemoteOffer(mockOffer, userId: "user123"))
+        await store.receive(.remoteOfferHandled("user123", mockAnswer)) {
             $0.connectedPeers = [
-                WebRTCFeature.PeerState(id: "test", connectionState: .connecting)
+                WebRTCFeature.PeerState(id: "user123", connectionState: .connecting)
             ]
         }
+        await store.receive(\.delegate, .answerGenerated(sdp: "mock-answer-sdp", userId: "user123"))
     }
 }
 ```
@@ -224,25 +317,43 @@ swift build
 
 ```mermaid
 sequenceDiagram
-    participant UI as SwiftUI View
+    participant App as Client App
+    participant Sig as Signaling Server
     participant F as WebRTCFeature
     participant D as WebRTCDependency
     participant E as WebRTCEngine
     participant W as WebRTC Framework
     
-    UI->>F: .view(.createPeerConnection)
-    F->>D: createPeerConnection(userId)
-    D->>E: createPeerConnection(for: userId)
-    E->>W: RTCPeerConnection()
-    W-->>E: PeerConnection Created
-    E-->>D: Bool (success)
-    D-->>F: Bool (success)
-    F->>F: Update State
-    F->>UI: State Change (new peer)
+    Note over App,W: 1. Start WebRTC
+    App->>F: .view(.task)
+    F->>F: startListening
+    F->>E: events()
     
+    Note over App,W: 2. Receive Offer (Auto-Handle)
+    Sig->>App: WebRTCOffer
+    App->>F: .view(.handleRemoteOffer)
+    F->>D: setRemoteOffer(offer, userId)
+    D->>E: setRemoteOffer(offer, userId)
+    E->>W: setRemoteDescription(offer)
+    E->>W: createAnswer()
+    W-->>E: SDP Answer
+    E-->>D: WebRTCAnswer
+    D-->>F: WebRTCAnswer
+    F->>F: Update State (add peer)
+    F->>App: .delegate(.answerGenerated)
+    App->>Sig: Send Answer
+    
+    Note over App,W: 3. ICE Candidates
+    Sig->>App: ICECandidate
+    App->>F: .view(.handleICECandidate)
+    F->>D: addIceCandidate(candidate, userId)
+    D->>E: addIceCandidate(candidate, userId)
+    E->>W: add(iceCandidate)
+    
+    Note over App,W: 4. Connection Established & Video
     E->>F: WebRTCEvent.videoTrackAdded
     F->>F: Update Peer State
-    F->>UI: .delegate(.videoTrackAdded)
+    F->>App: .delegate(.videoTrackAdded)
 ```
 
 ## Contributing
