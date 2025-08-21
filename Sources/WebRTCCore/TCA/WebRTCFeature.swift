@@ -13,27 +13,27 @@ import OSLog
 // MARK: - WebRTC Feature
 
 @Reducer
-package struct WebRTCFeature {
+public struct WebRTCFeature {
 
     // MARK: - State
 
     @ObservableState
-    package struct State: Equatable {
-        package var connectedPeers: IdentifiedArrayOf<PeerState> = []
-        package var localConnectionState: ConnectionState = .disconnected
-        package var error: WebRTCError?
-        package var isListening = false
+    public struct State: Equatable {
+        public var connectedPeers: IdentifiedArrayOf<PeerState> = []
+        public var localConnectionState: ConnectionState = .disconnected
+        public var error: WebRTCError?
+        public var isListening = false
     }
 
     // MARK: - Peer State
 
     @ObservableState
-    package struct PeerState: Equatable, Identifiable {
-        package let id: String
-        package var videoTrack: VideoTrackInfo?
-        package var connectionState: ConnectionState = .connecting
+    public struct PeerState: Equatable, Identifiable {
+        public let id: String
+        public var videoTrack: VideoTrackInfo?
+        public var connectionState: ConnectionState = .connecting
 
-        package init(
+        public init(
             id: String, videoTrack: VideoTrackInfo? = nil,
             connectionState: ConnectionState = .connecting
         ) {
@@ -45,14 +45,14 @@ package struct WebRTCFeature {
 
     // MARK: - Connection State
 
-    package enum ConnectionState: String, Equatable, CaseIterable {
+    public enum ConnectionState: String, Equatable, CaseIterable {
         case disconnected
         case connecting
         case connected
         case failed
         case closed
 
-        package var isConnected: Bool {
+        public var isConnected: Bool {
             self == .connected
         }
     }
@@ -60,7 +60,7 @@ package struct WebRTCFeature {
     // MARK: - Actions
 
     @CasePathable
-    package enum Action: Equatable, BindableAction, ComposableArchitecture.ViewAction {
+    public enum Action: Equatable, BindableAction, ComposableArchitecture.ViewAction {
         case view(ViewAction)
         case binding(BindingAction<State>)
         case delegate(Delegate)
@@ -80,7 +80,7 @@ package struct WebRTCFeature {
     // MARK: - View Actions
 
     @CasePathable
-    package enum ViewAction: Equatable {
+    public enum ViewAction: Equatable {
         case task
         case createPeerConnection(userId: String)
         case removePeerConnection(userId: String)
@@ -94,7 +94,7 @@ package struct WebRTCFeature {
     // MARK: - Delegate Actions
 
     @CasePathable
-    package enum Delegate: Equatable {
+    public enum Delegate: Equatable {
         case offerGenerated(sdp: String, userId: String)
         case answerGenerated(sdp: String, userId: String)
         case iceCandidateGenerated(
@@ -111,12 +111,12 @@ package struct WebRTCFeature {
 
     // MARK: - Reducer Body
 
-    package var body: some ReducerOf<Self> {
+    public var body: some ReducerOf<Self> {
         BindingReducer()
         Reduce(core)
     }
 
-    package func core(into state: inout State, action: Action) -> Effect<Action> {
+    public func core(into state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case let .view(viewAction):
             return handleViewAction(viewAction, state: &state)
