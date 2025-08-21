@@ -27,12 +27,12 @@ public struct VideoTrackInfo: Equatable, Identifiable, @unchecked Sendable {
   }
 }
 
-/// Information about a peer connection state
-public struct PeerConnectionInfo: Equatable {
-  public let userId: String
-  public let connectionState: RTCPeerConnectionState
+/// Information about a peer connection state (internal use only)
+struct PeerConnectionInfo: Equatable {
+  let userId: String
+  let connectionState: RTCPeerConnectionState
 
-  public init(userId: String, connectionState: RTCPeerConnectionState) {
+  init(userId: String, connectionState: RTCPeerConnectionState) {
     self.userId = userId
     self.connectionState = connectionState
   }
@@ -41,7 +41,7 @@ public struct PeerConnectionInfo: Equatable {
 // MARK: - Signaling Models
 
 /// WebRTC Offer message for signaling
-public struct WebRTCOffer: Codable, Equatable {
+public struct WebRTCOffer: Codable, Equatable, Sendable {
   public let sdp: String
   public let type: String
   public let clientId: String
@@ -56,7 +56,7 @@ public struct WebRTCOffer: Codable, Equatable {
 }
 
 /// WebRTC Answer message for signaling
-public struct WebRTCAnswer: Codable, Equatable {
+public struct WebRTCAnswer: Codable, Equatable, Sendable {
   public let sdp: String
   public let type: String
   public let clientId: String
@@ -71,8 +71,8 @@ public struct WebRTCAnswer: Codable, Equatable {
 }
 
 /// ICE Candidate for signaling
-public struct ICECandidate: Codable, Equatable {
-  public struct Candidate: Codable, Equatable {
+public struct ICECandidate: Codable, Equatable, Sendable {
+  public struct Candidate: Codable, Equatable, Sendable {
     public let candidate: String
     public let sdpMLineIndex: Int
     public let sdpMid: String?
@@ -101,36 +101,36 @@ public struct ICECandidate: Codable, Equatable {
 /// Replaces delegate pattern with modern AsyncStream approach
 public enum WebRTCEvent: Equatable, Sendable {
   // MARK: - SDP Events
-  
+
   /// Offer was generated for a peer
   case offerGenerated(sdp: String, userId: String)
-  
+
   /// Answer was generated for a peer
   case answerGenerated(sdp: String, userId: String)
-  
+
   // MARK: - ICE Events
-  
+
   /// ICE candidate was generated for a peer
   case iceCandidateGenerated(candidate: String, sdpMLineIndex: Int, sdpMid: String?, userId: String)
-  
+
   // MARK: - Connection Events
-  
+
   /// Peer connection state changed
   case connectionStateChanged(state: String, userId: String)
-  
+
   /// ICE connection state changed
   case iceConnectionStateChanged(state: String, userId: String)
-  
+
   // MARK: - Media Events
-  
+
   /// Remote video track was added
   case videoTrackAdded(trackInfo: VideoTrackInfo)
-  
+
   /// Remote video track was removed
   case videoTrackRemoved(userId: String)
-  
+
   // MARK: - Error Events
-  
+
   /// Error occurred in WebRTC engine
   case errorOccurred(error: WebRTCError, userId: String?)
 }

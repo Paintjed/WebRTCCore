@@ -35,7 +35,9 @@ class PeerConnectionDelegate: NSObject, RTCPeerConnectionDelegate {
     _ peerConnection: RTCPeerConnection,
     didChange stateChanged: RTCSignalingState
   ) {
-    logger.info("🔗 PeerConnection[\(self.userId)]: Signaling state changed to \(String(describing: stateChanged))")
+    logger.info(
+      "🔗 PeerConnection[\(self.userId)]: Signaling state changed to \(String(describing: stateChanged))"
+    )
   }
 
   func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
@@ -61,8 +63,10 @@ class PeerConnectionDelegate: NSObject, RTCPeerConnectionDelegate {
     streams: [RTCMediaStream]
   ) {
     logger.info("📺 PeerConnection[\(self.userId)]: Modern track added via receiver")
-    logger.info("📺 PeerConnection[\(self.userId)]: Track kind: \(receiver.track?.kind ?? "unknown")")
-    logger.info("📺 PeerConnection[\(self.userId)]: Track enabled: \(receiver.track?.isEnabled ?? false)")
+    logger.info(
+      "📺 PeerConnection[\(self.userId)]: Track kind: \(receiver.track?.kind ?? "unknown")")
+    logger.info(
+      "📺 PeerConnection[\(self.userId)]: Track enabled: \(receiver.track?.isEnabled ?? false)")
 
     if let track = receiver.track, track.kind == "video",
       let videoTrack = track as? RTCVideoTrack
@@ -92,12 +96,13 @@ class PeerConnectionDelegate: NSObject, RTCPeerConnectionDelegate {
     logger.info("🧊 PeerConnection[\(self.userId)]: ICE candidate generated")
     logger.info("🧊 PeerConnection[\(self.userId)]: Candidate SDP: \(candidate.sdp)")
 
-    eventsContinuation.yield(.iceCandidateGenerated(
-      candidate: candidate.sdp,
-      sdpMLineIndex: Int(candidate.sdpMLineIndex),
-      sdpMid: candidate.sdpMid,
-      userId: self.userId
-    ))
+    eventsContinuation.yield(
+      .iceCandidateGenerated(
+        candidate: candidate.sdp,
+        sdpMLineIndex: Int(candidate.sdpMLineIndex),
+        sdpMid: candidate.sdpMid,
+        userId: self.userId
+      ))
   }
 
   func peerConnection(
@@ -119,24 +124,32 @@ class PeerConnectionDelegate: NSObject, RTCPeerConnectionDelegate {
     _ peerConnection: RTCPeerConnection,
     didChange newState: RTCIceConnectionState
   ) {
-    logger.info("🧊 PeerConnection[\(self.userId)]: ICE connection state changed to \(String(describing: newState))")
+    logger.info(
+      "🧊 PeerConnection[\(self.userId)]: ICE connection state changed to \(String(describing: newState))"
+    )
 
-    eventsContinuation.yield(.iceConnectionStateChanged(state: newState.description, userId: self.userId))
+    eventsContinuation.yield(
+      .iceConnectionStateChanged(state: newState.description, userId: self.userId))
   }
 
   func peerConnection(
     _ peerConnection: RTCPeerConnection,
     didChange newState: RTCIceGatheringState
   ) {
-    logger.info("🧊 PeerConnection[\(self.userId)]: ICE gathering state changed to \(String(describing: newState))")
+    logger.info(
+      "🧊 PeerConnection[\(self.userId)]: ICE gathering state changed to \(String(describing: newState))"
+    )
   }
 
   func peerConnection(
     _ peerConnection: RTCPeerConnection,
     didChange newState: RTCPeerConnectionState
   ) {
-    logger.info("🔗 PeerConnection[\(self.userId)]: Peer connection state changed to \(String(describing: newState))")
+    logger.info(
+      "🔗 PeerConnection[\(self.userId)]: Peer connection state changed to \(String(describing: newState))"
+    )
 
-    eventsContinuation.yield(.connectionStateChanged(state: newState.description, userId: self.userId))
+    eventsContinuation.yield(
+      .connectionStateChanged(state: newState.description, userId: self.userId))
   }
 }

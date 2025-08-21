@@ -12,19 +12,19 @@ import OSLog
 // MARK: - WebRTC Engine
 
 /// Core WebRTC engine that handles peer connections and media streams
-/// This class is focused solely on WebRTC functionality, with no signaling logic  
+/// This class is focused solely on WebRTC functionality, with no signaling logic
 /// Uses AsyncStream for modern event handling instead of delegate pattern
-public actor WebRTCEngine {
+actor WebRTCEngine {
 
-  // MARK: - Public Properties
+  // MARK: - Internal Properties
 
   /// List of currently connected peer user IDs
-  public var connectedPeers: [String] {
+  var connectedPeers: [String] {
     Array(peerConnections.keys)
   }
 
   /// Event stream for WebRTC events (replaces delegate pattern)
-  public let events: AsyncStream<WebRTCEvent>
+  let events: AsyncStream<WebRTCEvent>
   private let eventsContinuation: AsyncStream<WebRTCEvent>.Continuation
 
   // MARK: - Private Properties
@@ -45,12 +45,12 @@ public actor WebRTCEngine {
 
   // MARK: - Initialization
 
-  public init() {
+  init() {
     // Initialize event stream
     let (stream, continuation) = AsyncStream.makeStream(of: WebRTCEvent.self)
     self.events = stream
     self.eventsContinuation = continuation
-    
+
     Task {
       await setupWebRTC()
     }
@@ -79,13 +79,13 @@ public actor WebRTCEngine {
     logger.info("✅ WebRTCEngine: WebRTC setup completed (receive-only mode)")
   }
 
-  // MARK: - Public API
+  // MARK: - Internal API
 
   /// Create a new peer connection for the specified user
   /// - Parameter userId: The user ID to create connection for
   /// - Returns: True if connection was created successfully, false otherwise
   @discardableResult
-  public func createPeerConnection(for userId: String) -> Bool {
+  func createPeerConnection(for userId: String) -> Bool {
     logger.info("🤝 WebRTCEngine: Creating peer connection for user: \(userId)")
 
     guard peerConnections[userId] == nil else {
@@ -137,7 +137,7 @@ public actor WebRTCEngine {
 
   /// Remove a peer connection for the specified user
   /// - Parameter userId: The user ID to remove connection for
-  public func removePeerConnection(for userId: String) {
+  func removePeerConnection(for userId: String) {
     logger.info("🗑️ WebRTCEngine: Removing peer connection for user: \(userId)")
 
     if let peerConnection = peerConnections[userId] {
@@ -154,7 +154,7 @@ public actor WebRTCEngine {
 
   /// Create an offer for the specified user
   /// - Parameter userId: The user ID to create offer for
-  public func createOffer(for userId: String) async throws {
+  func createOffer(for userId: String) async throws {
     guard let peerConnection = peerConnections[userId] else {
       logger.error("❌ WebRTCEngine: No peer connection found for \(userId)")
       throw WebRTCError.peerConnectionNotFound
@@ -185,7 +185,7 @@ public actor WebRTCEngine {
   ///   - userId: The user ID this offer is from
   /// - Returns: The generated answer session description
   @discardableResult
-  public func setRemoteOffer(_ offer: RTCSessionDescription, for userId: String) async throws
+  func setRemoteOffer(_ offer: RTCSessionDescription, for userId: String) async throws
     -> RTCSessionDescription
   {
     // Create peer connection if it doesn't exist
@@ -227,7 +227,7 @@ public actor WebRTCEngine {
   /// - Parameters:
   ///   - answer: The remote SDP answer
   ///   - userId: The user ID this answer is from
-  public func setRemoteAnswer(_ answer: RTCSessionDescription, for userId: String) async throws {
+  func setRemoteAnswer(_ answer: RTCSessionDescription, for userId: String) async throws {
     guard let peerConnection = peerConnections[userId] else {
       logger.error("❌ WebRTCEngine: No peer connection found for \(userId)")
       throw WebRTCError.peerConnectionNotFound
@@ -249,7 +249,7 @@ public actor WebRTCEngine {
   /// - Parameters:
   ///   - candidate: The ICE candidate to add
   ///   - userId: The user ID this candidate is for
-  public func addIceCandidate(_ candidate: RTCIceCandidate, for userId: String) async throws {
+  func addIceCandidate(_ candidate: RTCIceCandidate, for userId: String) async throws {
     guard let peerConnection = peerConnections[userId] else {
       logger.error("❌ WebRTCEngine: No peer connection found for \(userId)")
       throw WebRTCError.peerConnectionNotFound
@@ -268,6 +268,6 @@ public actor WebRTCEngine {
   }
 
   // MARK: - Internal Methods
-  
+
   // Internal state management is handled by TCA features through the events stream
 }

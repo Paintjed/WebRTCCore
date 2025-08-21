@@ -28,13 +28,13 @@ public struct WebRTCDependency: Sendable {
   public var createOffer: @Sendable (String) async throws -> Void
 
   /// Set remote offer and return generated answer
-  public var setRemoteOffer: @Sendable (RTCSessionDescription, String) async throws -> RTCSessionDescription
+  public var setRemoteOffer: @Sendable (WebRTCOffer, String) async throws -> WebRTCAnswer
 
   /// Set remote answer
-  public var setRemoteAnswer: @Sendable (RTCSessionDescription, String) async throws -> Void
+  public var setRemoteAnswer: @Sendable (WebRTCAnswer, String) async throws -> Void
 
   /// Add ICE candidate
-  public var addIceCandidate: @Sendable (RTCIceCandidate, String) async throws -> Void
+  public var addIceCandidate: @Sendable (ICECandidate, String) async throws -> Void
 
   // MARK: - Event Stream (replaces delegate pattern)
 
@@ -52,7 +52,7 @@ extension WebRTCDependency: TestDependencyKey {
 extension WebRTCDependency: DependencyKey {
   public static let liveValue: Self = {
     let engine = WebRTCEngine()
-    
+
     return WebRTCDependency(
       createPeerConnection: { userId in
         await engine.createPeerConnection(for: userId)
@@ -64,13 +64,17 @@ extension WebRTCDependency: DependencyKey {
         try await engine.createOffer(for: userId)
       },
       setRemoteOffer: { offer, userId in
-        try await engine.setRemoteOffer(offer, for: userId)
+        let rtcOffer = offer.toRTCSessionDescription()
+        let rtcAnswer = try await engine.setRemoteOffer(rtcOffer, for: userId)
+        return rtcAnswer.toWebRTCAnswer(clientId: userId)
       },
       setRemoteAnswer: { answer, userId in
-        try await engine.setRemoteAnswer(answer, for: userId)
+        let rtcAnswer = answer.toRTCSessionDescription()
+        try await engine.setRemoteAnswer(rtcAnswer, for: userId)
       },
       addIceCandidate: { candidate, userId in
-        try await engine.addIceCandidate(candidate, for: userId)
+        let rtcCandidate = candidate.toRTCIceCandidate()
+        try await engine.addIceCandidate(rtcCandidate, for: userId)
       },
       events: {
         engine.events
@@ -81,10 +85,9 @@ extension WebRTCDependency: DependencyKey {
 
 // MARK: - Dependency Values Extension
 
-public extension DependencyValues {
-  var webRTCEngine: WebRTCDependency {
+extension DependencyValues {
+  public var webRTCEngine: WebRTCDependency {
     get { self[WebRTCDependency.self] }
     set { self[WebRTCDependency.self] = newValue }
   }
 }
-

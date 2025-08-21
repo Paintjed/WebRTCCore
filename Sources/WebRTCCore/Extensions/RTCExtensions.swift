@@ -10,8 +10,8 @@ import WebRTC
 
 // MARK: - RTCSessionDescription Extensions
 
-public extension RTCSessionDescription {
-  /// Convert to WebRTCOffer model
+extension RTCSessionDescription {
+  /// Convert to WebRTCOffer model (internal use)
   /// - Parameters:
   ///   - clientId: The client ID for this offer
   ///   - videoSource: The video source identifier
@@ -25,7 +25,7 @@ public extension RTCSessionDescription {
     )
   }
 
-  /// Convert to WebRTCAnswer model
+  /// Convert to WebRTCAnswer model (internal use)
   /// - Parameters:
   ///   - clientId: The client ID for this answer
   ///   - videoSource: The video source identifier
@@ -42,8 +42,8 @@ public extension RTCSessionDescription {
 
 // MARK: - RTCIceCandidate Extensions
 
-public extension RTCIceCandidate {
-  /// Convert to ICECandidate model
+extension RTCIceCandidate {
+  /// Convert to ICECandidate model (internal use)
   /// - Parameter clientId: The client ID for this candidate
   /// - Returns: ICECandidate instance
   func toICECandidate(clientId: String) -> ICECandidate {
@@ -61,26 +61,26 @@ public extension RTCIceCandidate {
 
 // MARK: - Model to WebRTC Extensions
 
-public extension WebRTCOffer {
+extension WebRTCOffer {
   /// Convert to RTCSessionDescription
   /// - Returns: RTCSessionDescription for offer
-  func toRTCSessionDescription() -> RTCSessionDescription {
+  public func toRTCSessionDescription() -> RTCSessionDescription {
     return RTCSessionDescription(type: .offer, sdp: self.sdp)
   }
 }
 
-public extension WebRTCAnswer {
+extension WebRTCAnswer {
   /// Convert to RTCSessionDescription
   /// - Returns: RTCSessionDescription for answer
-  func toRTCSessionDescription() -> RTCSessionDescription {
+  public func toRTCSessionDescription() -> RTCSessionDescription {
     return RTCSessionDescription(type: .answer, sdp: self.sdp)
   }
 }
 
-public extension ICECandidate {
+extension ICECandidate {
   /// Convert to RTCIceCandidate
   /// - Returns: RTCIceCandidate instance
-  func toRTCIceCandidate() -> RTCIceCandidate {
+  public func toRTCIceCandidate() -> RTCIceCandidate {
     return RTCIceCandidate(
       sdp: self.candidate.candidate,
       sdpMLineIndex: Int32(self.candidate.sdpMLineIndex),
@@ -89,9 +89,9 @@ public extension ICECandidate {
   }
 }
 
-// MARK: - RTCPeerConnectionState Extensions
+// MARK: - RTCPeerConnectionState Extensions (internal use)
 
-public extension RTCPeerConnectionState {
+extension RTCPeerConnectionState {
   /// Human readable description
   var description: String {
     switch self {
@@ -123,9 +123,9 @@ public extension RTCPeerConnectionState {
   }
 }
 
-// MARK: - RTCIceConnectionState Extensions
+// MARK: - RTCIceConnectionState Extensions (internal use)
 
-public extension RTCIceConnectionState {
+extension RTCIceConnectionState {
   /// Human readable description
   var description: String {
     switch self {
