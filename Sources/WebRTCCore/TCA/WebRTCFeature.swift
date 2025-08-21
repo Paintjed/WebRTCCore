@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import Foundation
 import OSLog
-import WebRTC
+@preconcurrency import WebRTC
 
 // MARK: - WebRTC Feature
 
@@ -107,7 +107,6 @@ package struct WebRTCFeature {
 
     // MARK: - Dependencies
 
-    @Dependency(\.continuousClock) var clock
     private let logger = Logger(subsystem: "WebRTCCore", category: "WebRTCFeature")
 
     // MARK: - Reducer Body

@@ -7,7 +7,7 @@
 
 import Foundation
 import OSLog
-import WebRTC
+@preconcurrency import WebRTC
 
 // MARK: - WebRTC Engine
 
@@ -51,8 +51,9 @@ public actor WebRTCEngine {
     self.events = stream
     self.eventsContinuation = continuation
     
-    setupWebRTC()
-    
+    Task {
+      await setupWebRTC()
+    }
     // Events are handled externally by TCA features
   }
 

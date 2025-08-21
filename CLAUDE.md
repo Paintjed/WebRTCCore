@@ -13,7 +13,7 @@
 - **CRITICAL**: Run each test immediately after writing it - never batch-write multiple tests without running them
 - **TDD Order**: When modifying existing code, ALWAYS update tests first, then implementation
 - **Test Coverage**: Always write tests for new features, refactorings, and bug fixes
-- For non-macOS projects, use xcodebuild to run tests
+- **ALWAYS use `swift test` for running tests** - consistent across all platforms
 
 ## Swift Programming Rules
 - **ALWAYS run `swift-format` before committing**

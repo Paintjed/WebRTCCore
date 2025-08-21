@@ -11,7 +11,7 @@ import WebRTC
 // MARK: - Core WebRTC Models
 
 /// Information about a video track from a peer
-public struct VideoTrackInfo: Equatable, Identifiable {
+public struct VideoTrackInfo: Equatable, Identifiable, @unchecked Sendable {
   public let id: String
   public let userId: String
   public let track: RTCVideoTrack?

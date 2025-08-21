@@ -7,14 +7,14 @@
 
 import ComposableArchitecture
 import Foundation
-import WebRTC
+@preconcurrency import WebRTC
 
 // MARK: - WebRTC Dependency
 
 /// Modern TCA dependency for WebRTC functionality
 /// Uses AsyncStream for event handling instead of delegate pattern
 @DependencyClient
-public struct WebRTCDependency {
+public struct WebRTCDependency: Sendable {
 
   // MARK: - Core Operations
 

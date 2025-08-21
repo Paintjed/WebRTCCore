@@ -7,15 +7,16 @@
 
 import ComposableArchitecture
 import CustomDump
-import WebRTC
-import XCTest
+@preconcurrency import WebRTC
+import Testing
 
 @testable import WebRTCCore
 
 @MainActor
-final class WebRTCFeatureTests: XCTestCase {
+struct WebRTCFeatureTests {
 
-    func test_task_startsListening() async {
+    @Test
+    func task_startsListening() async {
         let eventstream = AsyncStream.makeStream(of: WebRTCEvent.self)
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
@@ -33,7 +34,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.finish()
     }
 
-    func test_createPeerConnection_success() async {
+    @Test
+    func createPeerConnection_success() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
@@ -48,7 +50,8 @@ final class WebRTCFeatureTests: XCTestCase {
         }
     }
 
-    func test_createPeerConnection_failure() async {
+    @Test
+    func createPeerConnection_failure() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
@@ -63,7 +66,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.delegate, .errorOccurred(.peerConnectionNotFound, userId: "user123"))
     }
 
-    func test_removePeerConnection() async {
+    @Test
+    func removePeerConnection() async {
         let store = TestStore(
             initialState: WebRTCFeature.State(
                 connectedPeers: [
@@ -83,7 +87,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.delegate, .videoTrackRemoved(userId: "user123"))
     }
 
-    func test_createOffer_success() async {
+    @Test
+    func createOffer_success() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
@@ -94,7 +99,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.offerCreated, "user123")
     }
 
-    func test_createOffer_failure() async {
+    @Test
+    func createOffer_failure() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
@@ -108,7 +114,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.delegate, .errorOccurred(.failedToCreateOffer, userId: "user123"))
     }
 
-    func test_handleRemoteOffer_success() async {
+    @Test
+    func handleRemoteOffer_success() async {
         let mockOffer = RTCSessionDescription(type: .offer, sdp: "mock-offer-sdp")
         let mockAnswer = RTCSessionDescription(type: .answer, sdp: "mock-answer-sdp")
 
@@ -122,7 +129,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(.remoteOfferHandled("user123", mockAnswer))
     }
 
-    func test_handleRemoteAnswer_success() async {
+    @Test
+    func handleRemoteAnswer_success() async {
         let mockAnswer = RTCSessionDescription(type: .answer, sdp: "mock-answer-sdp")
 
         let store = TestStore(initialState: WebRTCFeature.State()) {
@@ -135,7 +143,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.remoteAnswerSet, "user123")
     }
 
-    func test_handleICECandidate_success() async {
+    @Test
+    func handleICECandidate_success() async {
         let mockCandidate = RTCIceCandidate(
             sdp: "candidate:mock",
             sdpMLineIndex: 0,
@@ -152,7 +161,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.iceCandidateAdded, "user123")
     }
 
-    func test_dismissError() async {
+    @Test
+    func dismissError() async {
         let store = TestStore(
             initialState: WebRTCFeature.State(error: .peerConnectionNotFound)
         ) {
@@ -164,7 +174,8 @@ final class WebRTCFeatureTests: XCTestCase {
         }
     }
 
-    func test_webRTCEvent_offerGenerated() async {
+    @Test
+    func webRTCEvent_offerGenerated() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         }
@@ -174,7 +185,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.delegate, .offerGenerated(sdp: "mock-sdp", userId: "user123"))
     }
 
-    func test_webRTCEvent_videoTrackAdded() async {
+    @Test
+    func webRTCEvent_videoTrackAdded() async {
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         }
@@ -194,7 +206,8 @@ final class WebRTCFeatureTests: XCTestCase {
         await store.receive(\.delegate, .videoTrackAdded(trackInfo))
     }
 
-    func test_webRTCEvent_connectionStateChanged() async {
+    @Test
+    func webRTCEvent_connectionStateChanged() async {
         let store = TestStore(
             initialState: WebRTCFeature.State(
                 connectedPeers: [
