@@ -91,8 +91,8 @@ public struct WebRTCFeature {
   @CasePathable
   public enum ViewAction: Equatable {
     case task
-    case handleRemoteOffer(WebRTCOffer, userId: String)
-    case handleICECandidate(ICECandidate, userId: String)
+    case handleRemoteOffer(WebRTCOffer)
+    case handleICECandidate(ICECandidate)
     case disconnectPeer(userId: String)
     case dismissError
   }
@@ -187,12 +187,13 @@ public struct WebRTCFeature {
       }
       return .send(.startListening)
 
-    case let .handleRemoteOffer(offer, userId):
+    case let .handleRemoteOffer(offer):
+      let userId = offer.from
       return .run { send in
         @Dependency(\.webRTCEngine) var webRTCEngine
         do {
           // Automatically create peer connection and handle offer
-          let answer = try await webRTCEngine.setRemoteOffer(offer, userId)
+          let answer = try await webRTCEngine.setRemoteOffer(offer)
           await send(.remoteOfferHandled(userId, answer))
         } catch let error as WebRTCError {
           await send(.errorOccurred(error, userId))
@@ -201,11 +202,12 @@ public struct WebRTCFeature {
         }
       }
 
-    case let .handleICECandidate(candidate, userId):
+    case let .handleICECandidate(candidate):
+      let userId = candidate.from
       return .run { send in
         @Dependency(\.webRTCEngine) var webRTCEngine
         do {
-          try await webRTCEngine.addIceCandidate(candidate, userId)
+          try await webRTCEngine.addIceCandidate(candidate)
           await send(.iceCandidateAdded(userId))
         } catch let error as WebRTCError {
           await send(.errorOccurred(error, userId))

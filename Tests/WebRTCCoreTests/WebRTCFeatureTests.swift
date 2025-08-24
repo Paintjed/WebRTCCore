@@ -39,23 +39,25 @@ struct WebRTCFeatureTests {
     let mockOffer = WebRTCOffer(
       sdp: "mock-offer-sdp",
       type: "offer",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       videoSource: "camera"
     )
     let mockAnswer = WebRTCAnswer(
       sdp: "mock-answer-sdp",
       type: "answer",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       videoSource: "camera"
     )
 
     let store = TestStore(initialState: WebRTCFeature.State()) {
       WebRTCFeature()
     } withDependencies: {
-      $0.webRTCEngine.setRemoteOffer = { _, _ in mockAnswer }
+      $0.webRTCEngine.setRemoteOffer = { _ in mockAnswer }
     }
 
-    await store.send(\.view, .handleRemoteOffer(mockOffer, userId: "user123"))
+    await store.send(\.view, .handleRemoteOffer(mockOffer))
 
     // Should automatically create peer connection and send answer via delegate
     await store.receive(.remoteOfferHandled("user123", mockAnswer)) {
@@ -71,17 +73,18 @@ struct WebRTCFeatureTests {
     let mockOffer = WebRTCOffer(
       sdp: "mock-offer-sdp",
       type: "offer",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       videoSource: "camera"
     )
 
     let store = TestStore(initialState: WebRTCFeature.State()) {
       WebRTCFeature()
     } withDependencies: {
-      $0.webRTCEngine.setRemoteOffer = { _, _ in throw WebRTCError.failedToSetDescription }
+      $0.webRTCEngine.setRemoteOffer = { _ in throw WebRTCError.failedToSetDescription }
     }
 
-    await store.send(\.view, .handleRemoteOffer(mockOffer, userId: "user123"))
+    await store.send(\.view, .handleRemoteOffer(mockOffer))
     await store.receive(.errorOccurred(WebRTCError.failedToSetDescription, "user123")) {
       $0.error = .failedToSetDescription
     }
@@ -92,7 +95,8 @@ struct WebRTCFeatureTests {
   func handleICECandidate_success() async {
     let mockCandidate = ICECandidate(
       type: "ice",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       candidate: ICECandidate.Candidate(
         candidate: "candidate:mock",
         sdpMLineIndex: 0,
@@ -103,10 +107,10 @@ struct WebRTCFeatureTests {
     let store = TestStore(initialState: WebRTCFeature.State()) {
       WebRTCFeature()
     } withDependencies: {
-      $0.webRTCEngine.addIceCandidate = { _, _ in }
+      $0.webRTCEngine.addIceCandidate = { _ in }
     }
 
-    await store.send(\.view, .handleICECandidate(mockCandidate, userId: "user123"))
+    await store.send(\.view, .handleICECandidate(mockCandidate))
     await store.receive(\.iceCandidateAdded, "user123")
   }
 
@@ -114,7 +118,8 @@ struct WebRTCFeatureTests {
   func handleICECandidate_failure() async {
     let mockCandidate = ICECandidate(
       type: "ice",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       candidate: ICECandidate.Candidate(
         candidate: "candidate:mock",
         sdpMLineIndex: 0,
@@ -125,10 +130,10 @@ struct WebRTCFeatureTests {
     let store = TestStore(initialState: WebRTCFeature.State()) {
       WebRTCFeature()
     } withDependencies: {
-      $0.webRTCEngine.addIceCandidate = { _, _ in throw WebRTCError.failedToAddCandidate }
+      $0.webRTCEngine.addIceCandidate = { _ in throw WebRTCError.failedToAddCandidate }
     }
 
-    await store.send(\.view, .handleICECandidate(mockCandidate, userId: "user123"))
+    await store.send(\.view, .handleICECandidate(mockCandidate))
     await store.receive(.errorOccurred(WebRTCError.failedToAddCandidate, "user123")) {
       $0.error = .failedToAddCandidate
     }
@@ -228,13 +233,15 @@ struct WebRTCFeatureTests {
     let mockOffer = WebRTCOffer(
       sdp: "mock-offer-sdp",
       type: "offer",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       videoSource: "camera"
     )
     let mockAnswer = WebRTCAnswer(
       sdp: "mock-answer-sdp",
       type: "answer",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       videoSource: "camera"
     )
 
@@ -242,8 +249,8 @@ struct WebRTCFeatureTests {
       WebRTCFeature()
     } withDependencies: {
       $0.webRTCEngine.events = { eventstream.stream }
-      $0.webRTCEngine.setRemoteOffer = { _, _ in mockAnswer }
-      $0.webRTCEngine.addIceCandidate = { _, _ in }
+      $0.webRTCEngine.setRemoteOffer = { _ in mockAnswer }
+      $0.webRTCEngine.addIceCandidate = { _ in }
     }
 
     // 1. Start WebRTC
@@ -253,7 +260,7 @@ struct WebRTCFeatureTests {
     }
 
     // 2. Handle remote offer - automatically creates connection and sends answer
-    await store.send(\.view, .handleRemoteOffer(mockOffer, userId: "user123"))
+    await store.send(\.view, .handleRemoteOffer(mockOffer))
     await store.receive(.remoteOfferHandled("user123", mockAnswer)) {
       $0.connectedPeers = [
         WebRTCFeature.PeerState(id: "user123", connectionState: .connecting)
@@ -264,14 +271,15 @@ struct WebRTCFeatureTests {
     // 3. ICE candidates exchanged
     let iceCandidate = ICECandidate(
       type: "ice",
-      clientId: "user123",
+      from: "user123",
+      to: "current-user",
       candidate: ICECandidate.Candidate(
         candidate: "candidate:test",
         sdpMLineIndex: 0,
         sdpMid: "0"
       )
     )
-    await store.send(\.view, .handleICECandidate(iceCandidate, userId: "user123"))
+    await store.send(\.view, .handleICECandidate(iceCandidate))
     await store.receive(\.iceCandidateAdded, "user123")
 
     // 4. Connection established and video track added

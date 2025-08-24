@@ -13,28 +13,32 @@ import WebRTC
 extension RTCSessionDescription {
   /// Convert to WebRTCOffer model (internal use)
   /// - Parameters:
-  ///   - clientId: The client ID for this offer
+  ///   - from: The sender client ID
+  ///   - to: The receiver client ID
   ///   - videoSource: The video source identifier
   /// - Returns: WebRTCOffer instance
-  func toWebRTCOffer(clientId: String, videoSource: String = "") -> WebRTCOffer {
+  func toWebRTCOffer(from: String, to: String, videoSource: String = "") -> WebRTCOffer {
     return WebRTCOffer(
       sdp: self.sdp,
       type: "offer",
-      clientId: clientId,
+      from: from,
+      to: to,
       videoSource: videoSource
     )
   }
 
   /// Convert to WebRTCAnswer model (internal use)
   /// - Parameters:
-  ///   - clientId: The client ID for this answer
+  ///   - from: The sender client ID
+  ///   - to: The receiver client ID
   ///   - videoSource: The video source identifier
   /// - Returns: WebRTCAnswer instance
-  func toWebRTCAnswer(clientId: String, videoSource: String = "") -> WebRTCAnswer {
+  func toWebRTCAnswer(from: String, to: String, videoSource: String = "") -> WebRTCAnswer {
     return WebRTCAnswer(
       sdp: self.sdp,
       type: "answer",
-      clientId: clientId,
+      from: from,
+      to: to,
       videoSource: videoSource
     )
   }
@@ -44,12 +48,15 @@ extension RTCSessionDescription {
 
 extension RTCIceCandidate {
   /// Convert to ICECandidate model (internal use)
-  /// - Parameter clientId: The client ID for this candidate
+  /// - Parameters:
+  ///   - from: The sender client ID
+  ///   - to: The receiver client ID
   /// - Returns: ICECandidate instance
-  func toICECandidate(clientId: String) -> ICECandidate {
+  func toICECandidate(from: String, to: String) -> ICECandidate {
     return ICECandidate(
       type: "ice",
-      clientId: clientId,
+      from: from,
+      to: to,
       candidate: ICECandidate.Candidate(
         candidate: self.sdp,
         sdpMLineIndex: Int(self.sdpMLineIndex),

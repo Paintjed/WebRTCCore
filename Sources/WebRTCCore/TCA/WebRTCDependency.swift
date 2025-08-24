@@ -28,13 +28,13 @@ public struct WebRTCDependency: Sendable {
   public var createOffer: @Sendable (String) async throws -> Void
 
   /// Set remote offer and return generated answer
-  public var setRemoteOffer: @Sendable (WebRTCOffer, String) async throws -> WebRTCAnswer
+  public var setRemoteOffer: @Sendable (WebRTCOffer) async throws -> WebRTCAnswer
 
   /// Set remote answer
-  public var setRemoteAnswer: @Sendable (WebRTCAnswer, String) async throws -> Void
+  public var setRemoteAnswer: @Sendable (WebRTCAnswer) async throws -> Void
 
   /// Add ICE candidate
-  public var addIceCandidate: @Sendable (ICECandidate, String) async throws -> Void
+  public var addIceCandidate: @Sendable (ICECandidate) async throws -> Void
 
   // MARK: - Event Stream (replaces delegate pattern)
 
@@ -63,16 +63,19 @@ extension WebRTCDependency: DependencyKey {
       createOffer: { userId in
         try await engine.createOffer(for: userId)
       },
-      setRemoteOffer: { offer, userId in
+      setRemoteOffer: { offer in
+        let userId = offer.from
         let rtcOffer = offer.toRTCSessionDescription()
         let rtcAnswer = try await engine.setRemoteOffer(rtcOffer, for: userId)
-        return rtcAnswer.toWebRTCAnswer(clientId: userId)
+        return rtcAnswer.toWebRTCAnswer(from: userId, to: offer.from)
       },
-      setRemoteAnswer: { answer, userId in
+      setRemoteAnswer: { answer in
+        let userId = answer.from
         let rtcAnswer = answer.toRTCSessionDescription()
         try await engine.setRemoteAnswer(rtcAnswer, for: userId)
       },
-      addIceCandidate: { candidate, userId in
+      addIceCandidate: { candidate in
+        let userId = candidate.from
         let rtcCandidate = candidate.toRTCIceCandidate()
         try await engine.addIceCandidate(rtcCandidate, for: userId)
       },

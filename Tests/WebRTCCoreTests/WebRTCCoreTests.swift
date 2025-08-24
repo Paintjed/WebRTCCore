@@ -42,7 +42,8 @@ struct WebRTCCoreTests {
   func iceCandidateModel() {
     let candidate = ICECandidate(
       type: "ice",
-      clientId: "test-client",
+      from: "client-1",
+      to: "client-2",
       candidate: ICECandidate.Candidate(
         candidate: "test-candidate",
         sdpMLineIndex: 0,
@@ -51,7 +52,8 @@ struct WebRTCCoreTests {
     )
 
     #expect(candidate.type == "ice")
-    #expect(candidate.clientId == "test-client")
+    #expect(candidate.from == "client-1")
+    #expect(candidate.to == "client-2")
     #expect(candidate.candidate.candidate == "test-candidate")
     #expect(candidate.candidate.sdpMLineIndex == 0)
     #expect(candidate.candidate.sdpMid == "0")
@@ -92,13 +94,15 @@ struct WebRTCCoreTests {
     let offer = WebRTCOffer(
       sdp: "test-sdp",
       type: "offer",
-      clientId: "client123",
+      from: "client123",
+      to: "client456",
       videoSource: "camera"
     )
 
     #expect(offer.sdp == "test-sdp")
     #expect(offer.type == "offer")
-    #expect(offer.clientId == "client123")
+    #expect(offer.from == "client123")
+    #expect(offer.to == "client456")
     #expect(offer.videoSource == "camera")
   }
 
@@ -107,13 +111,15 @@ struct WebRTCCoreTests {
     let answer = WebRTCAnswer(
       sdp: "test-answer-sdp",
       type: "answer",
-      clientId: "client456",
+      from: "client456",
+      to: "client123",
       videoSource: "screen"
     )
 
     #expect(answer.sdp == "test-answer-sdp")
     #expect(answer.type == "answer")
-    #expect(answer.clientId == "client456")
+    #expect(answer.from == "client456")
+    #expect(answer.to == "client123")
     #expect(answer.videoSource == "screen")
   }
 

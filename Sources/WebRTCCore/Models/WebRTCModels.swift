@@ -44,13 +44,15 @@ struct PeerConnectionInfo: Equatable {
 public struct WebRTCOffer: Codable, Equatable, Sendable {
   public let sdp: String
   public let type: String
-  public let clientId: String
+  public let from: String
+  public let to: String
   public let videoSource: String
 
-  public init(sdp: String, type: String, clientId: String, videoSource: String) {
+  public init(sdp: String, type: String, from: String, to: String, videoSource: String) {
     self.sdp = sdp
     self.type = type
-    self.clientId = clientId
+    self.from = from
+    self.to = to
     self.videoSource = videoSource
   }
 }
@@ -59,13 +61,15 @@ public struct WebRTCOffer: Codable, Equatable, Sendable {
 public struct WebRTCAnswer: Codable, Equatable, Sendable {
   public let sdp: String
   public let type: String
-  public let clientId: String
+  public let from: String
+  public let to: String
   public let videoSource: String
 
-  public init(sdp: String, type: String, clientId: String, videoSource: String) {
+  public init(sdp: String, type: String, from: String, to: String, videoSource: String) {
     self.sdp = sdp
     self.type = type
-    self.clientId = clientId
+    self.from = from
+    self.to = to
     self.videoSource = videoSource
   }
 }
@@ -85,12 +89,14 @@ public struct ICECandidate: Codable, Equatable, Sendable {
   }
 
   public let type: String
-  public let clientId: String
+  public let from: String
+  public let to: String
   public let candidate: Candidate
 
-  public init(type: String, clientId: String, candidate: Candidate) {
+  public init(type: String, from: String, to: String, candidate: Candidate) {
     self.type = type
-    self.clientId = clientId
+    self.from = from
+    self.to = to
     self.candidate = candidate
   }
 }
