@@ -51,13 +51,15 @@ graph TD
 ### 🎯 WebRTCFeature
 The main TCA reducer with simplified receive-only API:
 - **5 Essential ViewActions**: `task`, `handleRemoteOffer`, `handleICECandidate`, `disconnectPeer`, `dismissError`
+- **Simplified Parameters**: No redundant userId parameters - extracted from model properties
 - **Automated Flow**: Receiving offers automatically creates connections and generates answers
 - **Delegate Events**: Auto-generated answers, video tracks, and connection updates
 - **State Management**: Tracks connected peers with automatic state updates
 
 ### 🔧 WebRTCDependency (Public API)
 Clean TCA dependency interface using standardized signaling models:
-- **Signaling Models**: Uses `WebRTCOffer`, `WebRTCAnswer`, `ICECandidate` instead of WebRTC native types
+- **Simplified API**: Methods only require model parameters (no redundant userId)
+- **Signaling Models**: Uses `WebRTCOffer`, `WebRTCAnswer`, `ICECandidate` with explicit `from`/`to` properties
 - **Automatic Conversion**: Internal conversion between signaling models and WebRTC types
 - **Test Support**: Mock implementations for comprehensive testing
 - **Sendable Compliance**: Full Swift 6 concurrency safety
@@ -71,10 +73,10 @@ Internal actor-based engine (not exposed to clients):
 - Event streaming via AsyncStream
 
 ### 📊 Signaling Models
-Standard interoperable data models:
-- `WebRTCOffer`: SDP offer with client metadata
-- `WebRTCAnswer`: SDP answer with client metadata  
-- `ICECandidate`: ICE candidate with structured data
+Standard interoperable data models with explicit direction:
+- `WebRTCOffer`: SDP offer with `from`/`to` properties for clear message routing
+- `WebRTCAnswer`: SDP answer with `from`/`to` properties for clear message routing
+- `ICECandidate`: ICE candidate with `from`/`to` properties for clear message routing
 - `VideoTrackInfo`: Video track information with Sendable compliance
 - `WebRTCEvent`: Unified event system for automated WebRTC operations
 
@@ -122,13 +124,13 @@ struct AppFeature: Reducer {
             switch action {
             // Auto-generated answer from WebRTC - send to signaling server
             case let .webRTC(.delegate(.answerGenerated(sdp, userId))):
-                let answer = WebRTCAnswer(sdp: sdp, type: "answer", clientId: userId, videoSource: "")
+                let answer = WebRTCAnswer(sdp: sdp, type: "answer", from: "current-user", to: userId, videoSource: "")
                 return sendToSignalingServer(answer, userId: userId)
                 
             // ICE candidate generated - send to signaling server  
             case let .webRTC(.delegate(.iceCandidateGenerated(candidate, sdpMLineIndex, sdpMid, userId))):
                 let iceCandidate = ICECandidate(
-                    type: "ice", clientId: userId,
+                    type: "ice", from: "current-user", to: userId,
                     candidate: ICECandidate.Candidate(
                         candidate: candidate, sdpMLineIndex: sdpMLineIndex, sdpMid: sdpMid
                     )
@@ -141,12 +143,12 @@ struct AppFeature: Reducer {
                 return .none
                 
             // Handle incoming signaling messages
-            case let .signalingMessage(.offer(offer, userId)):
+            case let .signalingMessage(.offer(offer)):
                 // Automatically handle offer and generate answer
-                return .send(.webRTC(.view(.handleRemoteOffer(offer, userId: userId))))
+                return .send(.webRTC(.view(.handleRemoteOffer(offer))))
                 
-            case let .signalingMessage(.iceCandidate(candidate, userId)):
-                return .send(.webRTC(.view(.handleICECandidate(candidate, userId: userId))))
+            case let .signalingMessage(.iceCandidate(candidate)):
+                return .send(.webRTC(.view(.handleICECandidate(candidate))))
                 
             default:
                 return .none
@@ -222,18 +224,18 @@ struct VideoCallView: View {
 store.send(.webRTC(.view(.task)))
 
 // 2. When you receive an offer from signaling server
-let offer = WebRTCOffer(sdp: sdpString, type: "offer", clientId: userId, videoSource: "camera")
-store.send(.webRTC(.view(.handleRemoteOffer(offer, userId: userId))))
+let offer = WebRTCOffer(sdp: sdpString, type: "offer", from: userId, to: "current-user", videoSource: "camera")
+store.send(.webRTC(.view(.handleRemoteOffer(offer))))
 
 // 3. WebRTC automatically generates answer - send it back via signaling
 // (handled in your reducer's delegate case)
 
 // 4. When you receive ICE candidates from signaling server
 let candidate = ICECandidate(
-    type: "ice", clientId: userId,
+    type: "ice", from: userId, to: "current-user",
     candidate: ICECandidate.Candidate(candidate: candidateString, sdpMLineIndex: 0, sdpMid: "0")
 )
-store.send(.webRTC(.view(.handleICECandidate(candidate, userId: userId))))
+store.send(.webRTC(.view(.handleICECandidate(candidate))))
 
 // 5. Video tracks are automatically added to state and delegate events fired
 ```
@@ -254,23 +256,25 @@ struct MyWebRTCTests {
         let mockOffer = WebRTCOffer(
             sdp: "mock-offer-sdp",
             type: "offer", 
-            clientId: "user123",
+            from: "user123",
+            to: "current-user",
             videoSource: "camera"
         )
         let mockAnswer = WebRTCAnswer(
             sdp: "mock-answer-sdp",
             type: "answer",
-            clientId: "user123", 
+            from: "current-user",
+            to: "user123", 
             videoSource: "camera"
         )
         
         let store = TestStore(initialState: WebRTCFeature.State()) {
             WebRTCFeature()
         } withDependencies: {
-            $0.webRTCEngine.setRemoteOffer = { _, _ in mockAnswer }
+            $0.webRTCEngine.setRemoteOffer = { _ in mockAnswer }
         }
         
-        await store.send(\.view, .handleRemoteOffer(mockOffer, userId: "user123"))
+        await store.send(\.view, .handleRemoteOffer(mockOffer))
         await store.receive(.remoteOfferHandled("user123", mockAnswer)) {
             $0.connectedPeers = [
                 WebRTCFeature.PeerState(id: "user123", connectionState: .connecting)
@@ -332,7 +336,7 @@ sequenceDiagram
     Note over App,W: 2. Receive Offer (Auto-Handle)
     Sig->>App: WebRTCOffer
     App->>F: .view(.handleRemoteOffer)
-    F->>D: setRemoteOffer(offer, userId)
+    F->>D: setRemoteOffer(offer)
     D->>E: setRemoteOffer(offer, userId)
     E->>W: setRemoteDescription(offer)
     E->>W: createAnswer()
@@ -346,7 +350,7 @@ sequenceDiagram
     Note over App,W: 3. ICE Candidates
     Sig->>App: ICECandidate
     App->>F: .view(.handleICECandidate)
-    F->>D: addIceCandidate(candidate, userId)
+    F->>D: addIceCandidate(candidate)
     D->>E: addIceCandidate(candidate, userId)
     E->>W: add(iceCandidate)
     
